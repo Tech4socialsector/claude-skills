@@ -1,51 +1,82 @@
 #!/usr/bin/env bash
-# Install / update the team skills into Claude Code (~/.claude/skills).
+# Install or update the team skills into Claude Code.
 #
-# First time:   bash <(curl -fsSL https://raw.githubusercontent.com/<org>/claude-skills/main/install.sh)
-#    or:        git clone <repo-url> ~/claude-skills && bash ~/claude-skills/install.sh
-# Update later: bash ~/claude-skills/install.sh
+#   First time:   git clone https://github.com/Tech4socialsector/claude-skills.git ~/claude-skills
+#                 bash ~/claude-skills/install.sh
+#   Update:       bash ~/claude-skills/install.sh
+#   One project:  TARGET=/path/to/project/.claude/skills bash ~/claude-skills/install.sh
 #
-# Options (environment variables):
-#   REPO_URL=...      git URL of this repo (needed only when run via curl)
-#   REPO_DIR=...      where the repo is kept            (default: ~/claude-skills)
-#   TARGET=...        where skills are installed         (default: ~/.claude/skills)
-#                     use TARGET=<project>/.claude/skills for one project only
+# What it does:
+#   1. Pulls the latest version of this repo (fast-forward only; if the clone has local
+#      changes or local commits it is left alone and the local copy is installed).
+#   2. Copies every skill in plugins/team-vue/skills/ into TARGET (default ~/.claude/skills).
+#   3. Removes team skills that were deleted from the repo since the last install.
+#   Your own personal skills in TARGET are never touched.
+#
+# Works on Linux, macOS, and Windows (Git Bash / WSL).
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-}"
-REPO_DIR="${REPO_DIR:-$HOME/claude-skills}"
+BRANCH="${BRANCH:-main}"
 TARGET="${TARGET:-$HOME/.claude/skills}"
-
-# If this script runs from inside a clone, use that clone.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)"
-if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/plugins/team-vue/skills" ]; then
-  REPO_DIR="$SCRIPT_DIR"
-fi
-
-if [ -d "$REPO_DIR/.git" ]; then
-  echo "Updating $REPO_DIR ..."
-  git -C "$REPO_DIR" pull --ff-only
-elif [ -n "$REPO_URL" ]; then
-  echo "Cloning $REPO_URL into $REPO_DIR ..."
-  git clone "$REPO_URL" "$REPO_DIR"
-elif [ ! -d "$REPO_DIR/plugins/team-vue/skills" ]; then
-  echo "Repo not found at $REPO_DIR. Set REPO_URL=<git url> and run again." >&2
-  exit 1
-fi
-
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="$REPO_DIR/plugins/team-vue/skills"
+MANIFEST="$TARGET/.team-skills-installed"
+
 if [ ! -d "$SRC" ]; then
-  echo "No skills found at $SRC (empty clone or wrong branch?)." >&2
+  echo "Error: $SRC not found. Run this script from inside the claude-skills clone." >&2
   exit 1
 fi
-mkdir -p "$TARGET"
 
+# 1. Update the clone (never destroys local work: fast-forward only)
+if [ -d "$REPO_DIR/.git" ] && [ "${SKIP_PULL:-0}" != "1" ]; then
+  if [ -n "$(git -C "$REPO_DIR" status --porcelain)" ]; then
+    echo "Warning: $REPO_DIR has local changes, so it was NOT updated; installing the local copy." >&2
+    echo "         To get the latest version, discard them:  git -C \"$REPO_DIR\" reset --hard origin/$BRANCH" >&2
+  else
+    echo "Updating $REPO_DIR from GitHub ..."
+    if git -C "$REPO_DIR" fetch --quiet origin "$BRANCH"; then
+      git -C "$REPO_DIR" checkout --quiet "$BRANCH" 2>/dev/null \
+        || git -C "$REPO_DIR" checkout --quiet -b "$BRANCH" "origin/$BRANCH"
+      if ! git -C "$REPO_DIR" merge --quiet --ff-only "origin/$BRANCH"; then
+        echo "Warning: local commits differ from GitHub, so the clone was NOT updated; installing the local copy." >&2
+      fi
+    else
+      echo "Warning: could not reach GitHub (check 'gh auth login' / network); installing the local copy." >&2
+    fi
+  fi
+fi
+
+# 2. Install
+mkdir -p "$TARGET"
+current=()
 for skill in "$SRC"/*/; do
+  [ -f "$skill/SKILL.md" ] || continue
   name="$(basename "$skill")"
-  rm -rf "${TARGET:?}/$name"          # replace old version of this skill only
-  cp -r "$skill" "$TARGET/$name"
-  echo "  installed $name"
+  current+=("$name")
+  rm -rf "${TARGET:?}/$name"
+  cp -R "${skill%/}" "$TARGET/$name"
+  echo "  installed  $name"
 done
 
-echo "Done. Skills are in $TARGET"
-echo "Start a new Claude Code chat (or reload VS Code) and type / to see them."
+if [ "${#current[@]}" -eq 0 ]; then
+  echo "Error: no skills (folders with SKILL.md) found in $SRC" >&2
+  exit 1
+fi
+
+# 3. Remove team skills that no longer exist in the repo
+if [ -f "$MANIFEST" ]; then
+  while IFS= read -r old; do
+    [ -n "$old" ] || continue
+    keep=0
+    for n in "${current[@]}"; do [ "$n" = "$old" ] && keep=1 && break; done
+    if [ "$keep" = 0 ] && [ -d "$TARGET/$old" ]; then
+      rm -rf "${TARGET:?}/$old"
+      echo "  removed    $old (deleted from the repo)"
+    fi
+  done < "$MANIFEST"
+fi
+printf '%s\n' "${current[@]}" > "$MANIFEST"
+
+version="$(grep -m1 '"version"' "$REPO_DIR/plugins/team-vue/.claude-plugin/plugin.json" | sed 's/[^0-9.]//g')"
+echo "Done: team skills v${version:-?} installed in $TARGET"
+echo "Next: reload VS Code (Ctrl+Shift+P > Developer: Reload Window) or start a new Claude Code session."

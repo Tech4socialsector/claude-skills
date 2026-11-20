@@ -1,7 +1,7 @@
 
 ---
 name: dashboard-guide
-description: Design, implement, review, and secure rich operational dashboards with KPI cards, dependent filters, tables, drilldowns, CSV exports, consistent visual design, and mandatory security checks. Use whenever building, modifying, debugging, or reviewing dashboards and analytics interfaces.
+description: Design, build and review secure operational dashboards: KPI cards, dependent filters, tables, drilldowns, CSV exports, security checks. Use when building, changing or reviewing any dashboard.
 ---
 
 # Dashboard Design Standards
@@ -342,3 +342,20 @@ When relevant, provide:
 - Known limitations and unresolved risks.
 
 Follow the user's requested output format. Preserve existing functionality unless a change is explicitly requested.
+
+## Implementing in Vue + frappe-ui
+
+In a Vue 3 + frappe-ui 1.2.0 frontend, build the dashboard from the team skills:
+
+- **Layout and data flow:** follow the `vue-architecture` skill. A dashboard service exposes
+  `get_dashboard(filters)` and `get_drilldown(bucket, filters)`. Both check permissions
+  server-side and use the same filter logic.
+- **KPI cards:** `NumberCard` from `frappe-ui/charts`.
+- **Charts:** `BarChart`, `LineChart`, `DonutChart`, … from `frappe-ui/charts`. Put the height
+  on the wrapper.
+- **Tables and drilldowns:** the team `DataTable` and `DrilldownDialog`
+  (`vue-common-components` skill).
+- **Filters:** `FormControl`, `Select`, `MultiSelect`, `DateRangePicker` from frappe-ui. Keep one
+  applied-filter state shared by cards, charts, tables and drilldowns.
+- **Page geometry:** centred `max-w-4xl space-y-6` (see the `frappe-ui` skill, "Screen
+  archetypes → Dashboard").

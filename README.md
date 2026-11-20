@@ -1,27 +1,138 @@
 # Team Skills for Claude Code
 
-Shared Claude Code skills for building Vue 3 + frappe-ui frontends the same way across all our
-projects, whatever the domain.
+Shared [Claude Code](https://code.claude.com) skills for the Tech4socialsector team. They teach
+Claude how **we** build Vue 3 + frappe-ui frontends and dashboards, so every project and every
+teammate gets the same structure, components and security checks, whatever the domain.
 
-## What's inside
+Repo: <https://github.com/Tech4socialsector/claude-skills>
 
-```
-.claude-plugin/marketplace.json        marketplace "team-skills"
-plugins/team-vue/
-  .claude-plugin/plugin.json           plugin "team-vue" (v1.0.0)
-  skills/
-    vue-architecture/                  team structure: layers, data flow, access, backend rules, scaffold
-    vue-common-components/             which component to use + team components (templates & contracts)
-    frappe-ui/                         official frappe-ui skill, v1.2.0 (unchanged, MIT)
-```
-
-| Skill | Claude uses it when… |
+| Skill | Claude uses it when you… |
 |---|---|
-| `vue-architecture` | adding or changing pages, routes, composables, services, stores or API calls, or scaffolding a new Vue frontend |
-| `vue-common-components` | building any screen: tables, badges, cards, dialogs, filters, pickers, charts, empty states |
-| `frappe-ui` | writing any frappe-ui markup (exact props, slots, tokens, data composables) |
+| `vue-architecture` | add or change pages, routes, composables, services, stores or API calls, or scaffold a new Vue frontend |
+| `vue-common-components` | build any screen: tables, status badges, cards, dialogs, filters, pickers, empty states |
+| `dashboard-guide` | build, change or review a dashboard (KPIs, filters, drilldowns, exports, security) |
+| `frappe-ui` | write frappe-ui markup (official reference for v1.2.0: exact props, slots, tokens, data composables) |
 
-## Pinned stack
+---
+
+## Installation guide (for teammates)
+
+Works for Claude Code in **VS Code** and in the **terminal**. You only do steps 1–3 once.
+
+### 1. Prerequisites
+- Read access to the GitHub repo (ask the repo admin to add you).
+- `git` logged into GitHub. With the GitHub CLI:
+  ```bash
+  gh auth login        # choose GitHub.com → HTTPS → log in with browser
+  gh auth setup-git
+  ```
+- Windows: run the commands in **Git Bash** or **WSL**.
+
+### 2. Clone the repo
+
+```bash
+git clone https://github.com/Tech4socialsector/claude-skills.git ~/claude-skills
+```
+
+### 3. Install the skills
+
+```bash
+bash ~/claude-skills/install.sh
+```
+
+Expected output:
+
+```
+Updating /home/<you>/claude-skills from GitHub ...
+  installed  dashboard-guide
+  installed  frappe-ui
+  installed  vue-architecture
+  installed  vue-common-components
+Done: team skills v1.1.0 installed in /home/<you>/.claude/skills
+```
+
+### 4. Check they're loaded
+1. VS Code: **Ctrl+Shift+P → Developer: Reload Window**. Terminal: start a new `claude`
+   session.
+2. In the Claude Code chat, type `/`. You should see `vue-architecture`,
+   `vue-common-components`, `dashboard-guide` and `frappe-ui`.
+3. Try it: *"Add a list page for <DocType> with search and a status column"*. Claude should
+   follow the service → composable → page structure and use `DataTable` + `StatusBadge`.
+
+The skills are now active in **every project** you open.
+
+### Updating
+When the team announces a new version, run the same command again:
+
+```bash
+bash ~/claude-skills/install.sh
+```
+
+It pulls the latest version, replaces only the team skills, removes team skills that were
+deleted from the repo, and never touches your personal skills.
+
+### Install for one project only (optional)
+
+```bash
+TARGET=/path/to/project/.claude/skills bash ~/claude-skills/install.sh
+```
+
+Commit that `.claude/skills` folder if the project is also used with **Claude Code on the web**
+(claude.ai/code), because cloud sessions only see skills committed inside the repo.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `could not read Username for 'https://github.com'` | Run `gh auth login` and `gh auth setup-git`, then retry |
+| `Repository not found` | You don't have access yet. Ask the repo admin |
+| Skills don't appear after `/` | Reload VS Code / start a new session; check `ls ~/.claude/skills` |
+| Two copies of a skill (e.g. `vue-architecture` and `team-vue:vue-architecture`) | You installed both ways. Keep one: remove the plugin (`/plugin`) **or** the folder in `~/.claude/skills` |
+| You had a personal skill with the same name | The installer replaced it. Rename your personal skill if you need both |
+
+---
+
+## Maintenance guide (for skill maintainers)
+
+### Change or add a skill
+
+```bash
+cd <your clone of claude-skills>
+git pull
+# edit files under plugins/team-vue/skills/<skill>/  (or add a new skill folder with a SKILL.md)
+```
+
+1. **Test locally** before pushing:
+   ```bash
+   SKIP_PULL=1 bash install.sh       # installs your working copy into ~/.claude/skills
+   ```
+   Reload VS Code and try a request that should use the skill.
+2. **Bump the version** in `plugins/team-vue/.claude-plugin/plugin.json` (e.g. `1.1.0 → 1.2.0`).
+   Set it only there, not in `marketplace.json`.
+3. **Commit and push:**
+   ```bash
+   git add .
+   git commit -m "vue-architecture: add pagination rule (v1.2.0)"
+   git push
+   ```
+4. **Tell the team** to run `bash ~/claude-skills/install.sh`.
+
+### Rules for skill files
+- Every skill is a folder with a `SKILL.md` that starts with:
+  ```yaml
+  ---
+  name: my-skill              # same as the folder name, lowercase-with-dashes
+  description: What it does and when to use it.   # ≤ 200 characters (claude.ai limit)
+  ---
+  ```
+- Keep `SKILL.md` short (under about 200 lines). Put details in `references/*.md` and code in
+  `templates/`.
+- No project secrets, credentials, personal data or internal URLs in skills.
+- **Don't edit `skills/frappe-ui/`.** It's the official upstream reference. To upgrade it, follow
+  `skills/frappe-ui/VERSION.md`, then update the pinned version in `vue-architecture`, rebuild
+  the templates on the new version, and bump the plugin version.
+
+### Pinned stack (what the skills assume)
 
 | Package | Version |
 |---|---|
@@ -32,103 +143,48 @@ plugins/team-vue/
 | Node | ≥ 20.19 |
 | Frappe | v15+ |
 
-All templates were built and rendered on this exact stack with no console errors or Vue
-warnings. Older apps on frappe-ui `0.1.x` are covered by
-`vue-architecture/references/legacy-0.1.md`.
+Older apps on frappe-ui `0.1.x` are covered by `vue-architecture/references/legacy-0.1.md`.
 
 ---
 
-## Install
-
-Replace `<org>/claude-skills` with the real GitHub repo. The repo can be private; each teammate
-needs read access, and git on their machine must already be logged in (`gh auth login`, then
-`gh auth setup-git`).
-
-### 1. Claude Code: terminal CLI or VS Code extension (recommended: plugin)
+## Repository layout
 
 ```
-/plugin marketplace add <org>/claude-skills
-/plugin install team-vue@team-skills          (choose "User" scope = all your projects)
+README.md
+install.sh                              installer / updater for teammates
+.claude-plugin/marketplace.json         plugin marketplace "team-skills" (optional install route)
+plugins/team-vue/
+  .claude-plugin/plugin.json            plugin "team-vue" + version
+  skills/
+    vue-architecture/                   SKILL.md, references/, templates/
+    vue-common-components/              SKILL.md, references/, templates/
+    dashboard-guide/                    SKILL.md, references/
+    frappe-ui/                          official frappe-ui skill v1.2.0 (MIT, unchanged)
 ```
 
-Or from a shell:
+## Other ways to install
 
-```bash
-claude plugin marketplace add <org>/claude-skills
-claude plugin install team-vue@team-skills --scope user
+Use **one** method per machine, or Claude sees two copies of each skill.
+
+**Claude Code plugin** (alternative to `install.sh`; skills appear as `team-vue:<skill>`):
+
+```
+/plugin marketplace add Tech4socialsector/claude-skills
+/plugin install team-vue@team-skills          → choose "User" scope
 ```
 
-- **Updates:** `/plugin marketplace update team-skills`, then `/plugin` → Installed → Update now
-  (or `claude plugin update team-vue@team-skills`).
-- **Check:** type `/` in Claude Code and look for `team-vue:vue-architecture`.
-- **One project only:** use `--scope project` and commit `.claude/settings.json`. Each teammate
-  still runs the install once per clone.
+Update with `/plugin marketplace update team-skills`, then `/plugin` → Installed → Update now.
 
-### 2. Claude Code without plugins: install script (simplest)
-
-```bash
-git clone https://github.com/<org>/claude-skills.git ~/claude-skills
-bash ~/claude-skills/install.sh                 # copies the skills into ~/.claude/skills
-# update later (same command):
-bash ~/claude-skills/install.sh                 # git pull + re-copy
-# one project only:
-TARGET=/path/to/project/.claude/skills bash ~/claude-skills/install.sh
-```
-
-Manual equivalent:
-
-```bash
-git clone https://github.com/<org>/claude-skills.git ~/claude-skills
-mkdir -p ~/.claude/skills
-cp -r ~/claude-skills/plugins/team-vue/skills/* ~/.claude/skills/
-# to update later:  cd ~/claude-skills && git pull && cp -r plugins/team-vue/skills/* ~/.claude/skills/
-```
-
-### 3. Claude Code on the web (claude.ai/code)
-
-Cloud sessions **don't load plugins or `~/.claude/skills`**. They only see skills committed
-inside the project repo:
-
-```bash
-cd <project-repo>
-mkdir -p .claude/skills
-cp -r ~/claude-skills/plugins/team-vue/skills/* .claude/skills/
-git add .claude/skills && git commit -m "Add team Vue skills" && git push
-```
-
-Skills enabled on claude.ai (section 4) also load in cloud sessions.
-
-### 4. Claude.ai web app (chat)
-
-You need code execution enabled (Settings → Capabilities). Upload each skill as a ZIP whose
-root is the skill folder:
+**Claude.ai web chat:** turn on code execution in Settings → Capabilities, then zip each skill
+folder and upload it under Customize → Skills → **+** → Create skill → Upload a skill:
 
 ```bash
 cd ~/claude-skills/plugins/team-vue/skills
 zip -r ~/vue-architecture.zip vue-architecture
 zip -r ~/vue-common-components.zip vue-common-components
+zip -r ~/dashboard-guide.zip dashboard-guide
 ```
 
-In claude.ai, go to Customize → Skills → **+** → Create skill → **Upload a skill**, and upload
-each ZIP. Uploaded skills are personal. On a Team or Enterprise plan, an owner can provision
-them for everyone (Organization settings → Plugins & skills).
-
-> **Don't upload the `frappe-ui` folder to claude.ai.** Its description is longer than the
-> 200-character limit there. Claude Code has no such limit, so keep it in sections 1–3.
-
-## Maintaining
-
-- **Change a team rule:** edit the files under `vue-architecture/` or
-  `vue-common-components/`, bump `version` in `plugins/team-vue/.claude-plugin/plugin.json`
-  (only there, not in `marketplace.json`), commit and push. Teammates then run
-  `/plugin marketplace update team-skills`.
-- **Add a team component:** follow `vue-common-components/references/adding-a-component.md`.
-  Add the template under `templates/` and its contract to `references/catalogue.md`.
-- **Upgrade frappe-ui:** follow `skills/frappe-ui/VERSION.md`. Replace the official files from
-  the new tag, update the pinned version in `vue-architecture/SKILL.md` and
-  `references/scaffold.md`, rebuild the templates on the new version, then bump the plugin
-  version.
-- **Don't edit `skills/frappe-ui/`** except during an upgrade. It's the upstream reference.
-- **Add a new skill** (e.g. `security-checklist`, `dashboard-guide`): create
-  `plugins/team-vue/skills/<name>/SKILL.md` with `name` and `description` frontmatter, or start
-  a new plugin under `plugins/` and list it in `marketplace.json`.
+Don't upload `frappe-ui` to claude.ai, because its description is over claude.ai's 200-character
+limit. On a Team or Enterprise plan, an owner can provision the skills for everyone
+(Organization settings → Plugins & skills).
