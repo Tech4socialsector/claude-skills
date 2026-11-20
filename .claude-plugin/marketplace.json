@@ -1,0 +1,16 @@
+{
+  "name": "team-skills",
+  "owner": {
+    "name": "Frontend Team"
+  },
+  "metadata": {
+    "description": "Shared Claude Code skills for the team's Vue 3 + frappe-ui frontends."
+  },
+  "plugins": [
+    {
+      "name": "team-vue",
+      "source": "./plugins/team-vue",
+      "description": "Vue 3 + frappe-ui 1.2.0 standards: architecture, shared components, and the official frappe-ui reference."
+    }
+  ]
+}
