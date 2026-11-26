@@ -12,6 +12,7 @@ Repo: <https://github.com/Tech4socialsector/claude-skills>
 | `vue-common-components` | build any screen: tables, status badges, cards, dialogs, filters, pickers, empty states |
 | `dashboard-guide` | build, change or review a dashboard (UI design, KPIs, charts, filters, drilldowns, exports, security), with ready Vue + backend templates |
 | `frappe-ui` | write frappe-ui markup (official reference for v1.2.0: exact props, slots, tokens, data composables) |
+| `frappe-app-dev` | work in any Frappe app (hooks.py + DocTypes): write or review backend code, run migrate or tests, set up a test site for a PR (official Frappe skill) |
 
 ---
 
@@ -45,17 +46,18 @@ Expected output:
 ```
 Updating /home/<you>/claude-skills from GitHub ...
   installed  dashboard-guide
+  installed  frappe-app-dev
   installed  frappe-ui
   installed  vue-architecture
   installed  vue-common-components
-Done: team skills v1.2.0 installed in /home/<you>/.claude/skills
+Done: team skills v1.3.0 installed in /home/<you>/.claude/skills
 ```
 
 ### 4. Check they're loaded
 1. VS Code: **Ctrl+Shift+P → Developer: Reload Window**. Terminal: start a new `claude`
    session.
 2. In the Claude Code chat, type `/`. You should see `vue-architecture`,
-   `vue-common-components`, `dashboard-guide` and `frappe-ui`.
+   `vue-common-components`, `dashboard-guide`, `frappe-ui` and `frappe-app-dev`.
 3. Try it: *"Add a list page for <DocType> with search and a status column"*. Claude should
    follow the service → composable → page structure and use `DataTable` + `StatusBadge`.
 
@@ -131,6 +133,8 @@ git pull
 - **Don't edit `skills/frappe-ui/`.** It's the official upstream reference. To upgrade it, follow
   `skills/frappe-ui/VERSION.md`, then update the pinned version in `vue-architecture`, rebuild
   the templates on the new version, and bump the plugin version.
+- **Don't edit `skills/frappe-app-dev/`.** It's the official upstream Frappe skill. To update it,
+  follow `skills/frappe-app-dev/VERSION.md` and bump the plugin version.
 
 ### Pinned stack (what the skills assume)
 
@@ -160,6 +164,7 @@ plugins/team-vue/
     vue-common-components/              SKILL.md, references/, templates/
     dashboard-guide/                    SKILL.md, references/
     frappe-ui/                          official frappe-ui skill v1.2.0 (MIT, unchanged)
+    frappe-app-dev/                     official Frappe app-dev skill from frappe/skills (unchanged)
 ```
 
 ## Other ways to install
@@ -185,6 +190,6 @@ zip -r ~/vue-common-components.zip vue-common-components
 zip -r ~/dashboard-guide.zip dashboard-guide
 ```
 
-Don't upload `frappe-ui` to claude.ai, because its description is over claude.ai's 200-character
+Don't upload `frappe-ui` or `frappe-app-dev` to claude.ai, because their descriptions are over claude.ai's 200-character
 limit. On a Team or Enterprise plan, an owner can provision the skills for everyone
 (Organization settings → Plugins & skills).
