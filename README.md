@@ -45,7 +45,7 @@ Updating /home/<you>/claude-skills from GitHub ...
   installed  vue-architecture
   installed  vue-common-components
   installed  frappe-app-dev (downloaded from upstream)
-Done: team skills v1.3.1 installed in /home/<you>/.claude/skills
+Done: team skills v1.3.2 installed in /home/<you>/.claude/skills
 ```
 
 ### 4. Check they're loaded
@@ -83,6 +83,7 @@ Commit that `.claude/skills` folder if the project is also used with **Claude Co
 |---|---|
 | `could not reach GitHub` / `could not download frappe-app-dev` | Check your network (and proxy), then run the installer again. Already-installed skills are kept |
 | `could not read Username for 'https://github.com'` or `Repository not found` | The clone URL is mistyped. Copy it exactly from step 2 |
+| `frappe-app-dev` missing after updating from v1.3.0 or older | Run `bash ~/claude-skills/install.sh` once more. Older installers can't fetch it on the first run; v1.3.2+ restarts itself after updating |
 | Skills don't appear after `/` | Reload VS Code / start a new session; check `ls ~/.claude/skills` |
 | Two copies of a skill (e.g. `vue-architecture` and `team-vue:vue-architecture`) | You installed both ways. Keep one: remove the plugin (`/plugin`) **or** the folder in `~/.claude/skills` |
 | You had a personal skill with the same name | The installer replaced it. Rename your personal skill if you need both |

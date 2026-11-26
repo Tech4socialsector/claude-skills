@@ -45,10 +45,15 @@ if [ -d "$REPO_DIR/.git" ] && [ "${SKIP_PULL:-0}" != "1" ]; then
   else
     echo "Updating $REPO_DIR from GitHub ..."
     if git -C "$REPO_DIR" fetch --quiet origin "$BRANCH"; then
+      before="$(git -C "$REPO_DIR" rev-parse HEAD)"
       git -C "$REPO_DIR" checkout --quiet "$BRANCH" 2>/dev/null \
         || git -C "$REPO_DIR" checkout --quiet -b "$BRANCH" "origin/$BRANCH"
       if ! git -C "$REPO_DIR" merge --quiet --ff-only "origin/$BRANCH"; then
         echo "Warning: local commits differ from GitHub, so the clone was NOT updated; installing the local copy." >&2
+      elif [ "$(git -C "$REPO_DIR" rev-parse HEAD)" != "$before" ]; then
+        # The pull may have changed this script; bash would keep running the old one,
+        # so restart with the updated script (without pulling again).
+        exec env SKIP_PULL=1 bash "$REPO_DIR/install.sh" "$@"
       fi
     else
       echo "Warning: could not reach GitHub (check your network connection); installing the local copy." >&2
