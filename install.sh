@@ -1,41 +1,52 @@
 #!/usr/bin/env bash
 # Install or update the team skills into Claude Code.
 #
-#   First time:   git clone https://github.com/Tech4socialsector/claude-skills.git ~/claude-skills
-#                 bash ~/claude-skills/install.sh
-#   Update:       bash ~/claude-skills/install.sh
-#   One project:  TARGET=/path/to/project/.claude/skills bash ~/claude-skills/install.sh
+#   Install / update (one line, no clone needed):
+#     curl -fsSL https://raw.githubusercontent.com/Tech4socialsector/claude-skills/main/install.sh | bash
 #
-# The repo is public, so no GitHub login is needed to clone, update or install.
+#   Or from a clone:
+#     git clone https://github.com/Tech4socialsector/claude-skills.git ~/claude-skills
+#     bash ~/claude-skills/install.sh
+#
+#   One project only:
+#     TARGET=/path/to/project/.claude/skills bash ~/claude-skills/install.sh
 #
 # What it does:
-#   1. Pulls the latest version of this repo (fast-forward only; if the clone has local
-#      changes or local commits it is left alone and the local copy is installed).
-#   2. Copies every skill in plugins/team-vue/skills/ into TARGET (default ~/.claude/skills).
-#   3. Downloads the upstream skills listed in UPSTREAM_SKILLS (pinned to a commit) into TARGET.
+#   1. Gets the latest repo into ~/claude-skills (clones it the first time; later a
+#      fast-forward pull that never overwrites local changes or local commits).
+#   2. Copies every folder in skills/ that has a SKILL.md into TARGET (default ~/.claude/skills).
+#   3. Downloads the skills listed in upstream-skills.txt into TARGET.
 #   4. Removes team skills that were deleted from the repo since the last install.
 #   Your own personal skills in TARGET are never touched.
 #
+# Options (environment variables): TARGET, REPO_DIR (default ~/claude-skills), BRANCH (main),
+# SKIP_PULL=1 (install the local copy without updating it, for testing changes).
 # Works on Linux, macOS, and Windows (Git Bash / WSL).
 set -euo pipefail
 
+REPO_URL="${REPO_URL:-https://github.com/Tech4socialsector/claude-skills.git}"
 BRANCH="${BRANCH:-main}"
 TARGET="${TARGET:-$HOME/.claude/skills}"
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SRC="$REPO_DIR/plugins/team-vue/skills"
 MANIFEST="$TARGET/.team-skills-installed"
 
-# Upstream skills downloaded at install time instead of being copied into this repo
-# (the upstream repo has no license, so we don't republish its files).
-# Format: "name|raw URL of SKILL.md pinned to a commit". To update, change the commit in the URL.
-UPSTREAM_SKILLS=(
-  "frappe-app-dev|https://raw.githubusercontent.com/frappe/skills/d213dce39942c969293e9fe7feb96ab33cbba25c/skills/frappe-app-dev/SKILL.md"
-)
-
-if [ ! -d "$SRC" ]; then
-  echo "Error: $SRC not found. Run this script from inside the claude-skills clone." >&2
-  exit 1
+# 0. Find the repo. Run from a clone → use it. Run via curl → use/clone ~/claude-skills.
+SCRIPT_DIR=""
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
+if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/skills" ]; then
+  REPO_DIR="$SCRIPT_DIR"
+else
+  REPO_DIR="${REPO_DIR:-$HOME/claude-skills}"
+  if [ ! -d "$REPO_DIR/.git" ]; then
+    command -v git >/dev/null 2>&1 || { echo "Error: git is required." >&2; exit 1; }
+    echo "Cloning $REPO_URL into $REPO_DIR ..."
+    git clone --quiet --branch "$BRANCH" "$REPO_URL" "$REPO_DIR"
+    export SKIP_PULL=1
+  fi
+  exec bash "$REPO_DIR/install.sh" "$@"
+fi
+SRC="$REPO_DIR/skills"
 
 # 1. Update the clone (never destroys local work: fast-forward only)
 if [ -d "$REPO_DIR/.git" ] && [ "${SKIP_PULL:-0}" != "1" ]; then
@@ -51,8 +62,7 @@ if [ -d "$REPO_DIR/.git" ] && [ "${SKIP_PULL:-0}" != "1" ]; then
       if ! git -C "$REPO_DIR" merge --quiet --ff-only "origin/$BRANCH"; then
         echo "Warning: local commits differ from GitHub, so the clone was NOT updated; installing the local copy." >&2
       elif [ "$(git -C "$REPO_DIR" rev-parse HEAD)" != "$before" ]; then
-        # The pull may have changed this script; bash would keep running the old one,
-        # so restart with the updated script (without pulling again).
+        # The pull may have changed this script; restart with the updated one (no second pull).
         exec env SKIP_PULL=1 bash "$REPO_DIR/install.sh" "$@"
       fi
     else
@@ -61,7 +71,12 @@ if [ -d "$REPO_DIR/.git" ] && [ "${SKIP_PULL:-0}" != "1" ]; then
   fi
 fi
 
-# 2. Install the team skills from this repo
+if [ ! -d "$SRC" ]; then
+  echo "Error: $SRC not found." >&2
+  exit 1
+fi
+
+# 2. Install the team skills from skills/
 mkdir -p "$TARGET"
 current=()
 for skill in "$SRC"/*/; do
@@ -79,25 +94,35 @@ if [ "${#current[@]}" -eq 0 ]; then
 fi
 
 # 3. Download the upstream skills (a failed download keeps any copy installed earlier)
-for entry in "${UPSTREAM_SKILLS[@]}"; do
-  name="${entry%%|*}"
-  url="${entry#*|}"
-  current+=("$name")   # always listed, so step 4 never removes it after a failed download
-  tmp="$(mktemp -d)"
-  if command -v curl >/dev/null 2>&1 \
-    && curl -fsSL --retry 2 "$url" -o "$tmp/SKILL.md" \
-    && [ "$(head -n 1 "$tmp/SKILL.md")" = "---" ]; then
-    rm -rf "${TARGET:?}/$name"
-    mkdir -p "$TARGET/$name"
-    cp "$tmp/SKILL.md" "$TARGET/$name/SKILL.md"
-    echo "  installed  $name (downloaded from upstream)"
-  elif [ -f "$TARGET/$name/SKILL.md" ]; then
-    echo "Warning: could not download $name (needs curl and network); kept the copy installed earlier." >&2
-  else
-    echo "Warning: could not download $name (needs curl and network); skipped. Run the installer again later." >&2
-  fi
-  rm -rf "$tmp"
-done
+UPSTREAM_LIST="$REPO_DIR/upstream-skills.txt"
+if [ -f "$UPSTREAM_LIST" ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%%#*}"                                   # strip comments
+    line="$(printf '%s' "$line" | tr -d '[:space:]')"   # names and URLs contain no spaces
+    [ -n "$line" ] || continue
+    name="${line%%|*}"
+    url="${line#*|}"
+    if [ -z "$name" ] || [ "$name" = "$line" ] || [ -z "$url" ]; then
+      echo "Warning: skipped malformed line in upstream-skills.txt" >&2
+      continue
+    fi
+    current+=("$name")   # always listed, so step 4 never removes it after a failed download
+    tmp="$(mktemp -d)"
+    if command -v curl >/dev/null 2>&1 \
+      && curl -fsSL --connect-timeout 10 --max-time 60 --retry 2 "$url" -o "$tmp/SKILL.md" \
+      && [ "$(head -n 1 "$tmp/SKILL.md")" = "---" ]; then
+      rm -rf "${TARGET:?}/$name"
+      mkdir -p "$TARGET/$name"
+      cp "$tmp/SKILL.md" "$TARGET/$name/SKILL.md"
+      echo "  installed  $name (downloaded from upstream)"
+    elif [ -f "$TARGET/$name/SKILL.md" ]; then
+      echo "Warning: could not download $name (needs curl and network); kept the copy installed earlier." >&2
+    else
+      echo "Warning: could not download $name (needs curl and network); skipped. Run the installer again later." >&2
+    fi
+    rm -rf "$tmp"
+  done < "$UPSTREAM_LIST"
+fi
 
 # 4. Remove team skills that no longer exist in the repo
 if [ -f "$MANIFEST" ]; then
@@ -113,6 +138,6 @@ if [ -f "$MANIFEST" ]; then
 fi
 printf '%s\n' "${current[@]}" > "$MANIFEST"
 
-version="$(grep -m1 '"version"' "$REPO_DIR/plugins/team-vue/.claude-plugin/plugin.json" | sed 's/[^0-9.]//g')"
+version="$(grep -m1 '"version"' "$REPO_DIR/.claude-plugin/plugin.json" 2>/dev/null | sed 's/[^0-9.]//g')"
 echo "Done: team skills v${version:-?} installed in $TARGET"
 echo "Next: reload VS Code (Ctrl+Shift+P > Developer: Reload Window) or start a new Claude Code session."

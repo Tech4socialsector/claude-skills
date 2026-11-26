@@ -1,0 +1,7 @@
+# Skills that install.sh downloads from other repos at install time
+# (not copied into this repo, e.g. because the upstream repo has no license).
+#
+# One per line:  <skill-name> | <raw URL of its SKILL.md, pinned to a commit>
+# To update one, change the commit in its URL. Lines starting with # are ignored.
+
+frappe-app-dev | https://raw.githubusercontent.com/frappe/skills/d213dce39942c969293e9fe7feb96ab33cbba25c/skills/frappe-app-dev/SKILL.md

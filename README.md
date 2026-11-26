@@ -1,10 +1,10 @@
 # Team Skills for Claude Code
 
 Shared [Claude Code](https://code.claude.com) skills for the Tech4socialsector team. They teach
-Claude how **we** build Vue 3 + frappe-ui frontends and dashboards, so every project and every
-teammate gets the same structure, components and security checks, whatever the domain.
+Claude how **we** build Frappe apps, Vue 3 + frappe-ui frontends and dashboards, so every project
+and every teammate gets the same structure, components and security checks, whatever the domain.
 
-Repo: <https://github.com/Tech4socialsector/claude-skills>
+Repo: <https://github.com/Tech4socialsector/claude-skills> (public)
 
 | Skill | Claude uses it when you… |
 |---|---|
@@ -16,39 +16,34 @@ Repo: <https://github.com/Tech4socialsector/claude-skills>
 
 ---
 
-## Installation guide (for teammates)
+## Install (for teammates)
 
-Works for Claude Code in **VS Code** and in the **terminal**. You only do steps 1–3 once.
+Works for Claude Code in **VS Code** and in the **terminal**, on Linux, macOS and Windows
+(Git Bash / WSL). Needs `git` and `curl`. **No GitHub account or login is needed.**
 
-### 1. Prerequisites
-- `git` and `curl` installed. The repo is public, so **no GitHub account or login is needed**.
-- Windows: run the commands in **Git Bash** or **WSL**.
-
-### 2. Clone the repo
+### 1. Run the installer
 
 ```bash
-git clone https://github.com/Tech4socialsector/claude-skills.git ~/claude-skills
+curl -fsSL https://raw.githubusercontent.com/Tech4socialsector/claude-skills/main/install.sh | bash
 ```
 
-### 3. Install the skills
-
-```bash
-bash ~/claude-skills/install.sh
-```
-
+This clones the repo into `~/claude-skills` and installs the skills into `~/.claude/skills`.
 Expected output:
 
 ```
-Updating /home/<you>/claude-skills from GitHub ...
+Cloning https://github.com/Tech4socialsector/claude-skills.git into /home/<you>/claude-skills ...
   installed  dashboard-guide
   installed  frappe-ui
   installed  vue-architecture
   installed  vue-common-components
   installed  frappe-app-dev (downloaded from upstream)
-Done: team skills v1.3.2 installed in /home/<you>/.claude/skills
+Done: team skills v1.4.0 installed in /home/<you>/.claude/skills
 ```
 
-### 4. Check they're loaded
+> Prefer to look first? `git clone https://github.com/Tech4socialsector/claude-skills.git ~/claude-skills`,
+> read `install.sh`, then run `bash ~/claude-skills/install.sh`. Same result.
+
+### 2. Check they're loaded
 1. VS Code: **Ctrl+Shift+P → Developer: Reload Window**. Terminal: start a new `claude`
    session.
 2. In the Claude Code chat, type `/`. You should see `vue-architecture`,
@@ -58,8 +53,9 @@ Done: team skills v1.3.2 installed in /home/<you>/.claude/skills
 
 The skills are now active in **every project** you open.
 
-### Updating
-When the team announces a new version, run the same command again:
+### Update
+
+Run the same one-liner again, or:
 
 ```bash
 bash ~/claude-skills/install.sh
@@ -82,22 +78,49 @@ Commit that `.claude/skills` folder if the project is also used with **Claude Co
 | Problem | Fix |
 |---|---|
 | `could not reach GitHub` / `could not download frappe-app-dev` | Check your network (and proxy), then run the installer again. Already-installed skills are kept |
-| `could not read Username for 'https://github.com'` or `Repository not found` | The clone URL is mistyped. Copy it exactly from step 2 |
-| `frappe-app-dev` missing after updating from v1.3.0 or older | Run `bash ~/claude-skills/install.sh` once more. Older installers can't fetch it on the first run; v1.3.2+ restarts itself after updating |
+| `has local changes, so it was NOT updated` | You edited files in `~/claude-skills`. Discard them with `git -C ~/claude-skills reset --hard origin/main`, then rerun |
 | Skills don't appear after `/` | Reload VS Code / start a new session; check `ls ~/.claude/skills` |
 | Two copies of a skill (e.g. `vue-architecture` and `team-vue:vue-architecture`) | You installed both ways. Keep one: remove the plugin (`/plugin`) **or** the folder in `~/.claude/skills` |
 | You had a personal skill with the same name | The installer replaced it. Rename your personal skill if you need both |
+| Upgrading from v1.3.x or older | Just run `bash ~/claude-skills/install.sh`; it moves you to the new layout automatically |
 
 ---
 
-## Maintenance guide (for skill maintainers)
+## Repository layout
+
+```
+claude-skills/
+├── README.md                  this guide
+├── install.sh                 installer / updater (run it; never edit ~/.claude/skills by hand)
+├── upstream-skills.txt        skills downloaded from other repos at install time
+├── .claude-plugin/            optional plugin install route (see "Other ways to install")
+│   ├── plugin.json            plugin "team-vue" + THE version number
+│   └── marketplace.json       marketplace "team-skills"
+└── skills/                    ← every team skill lives here, one folder each
+    ├── dashboard-guide/       SKILL.md, references/, templates/
+    ├── frappe-ui/             official frappe-ui skill v1.2.0 (MIT, unchanged)
+    ├── vue-architecture/      SKILL.md, references/, templates/
+    └── vue-common-components/ SKILL.md, references/, templates/
+```
+
+Each skill folder follows the same pattern:
+
+| Path | Holds |
+|---|---|
+| `SKILL.md` | The rules Claude reads first (short, ≤ ~200 lines) |
+| `references/*.md` | Longer guides Claude opens when needed |
+| `templates/*` | Ready-to-copy code (tested on the pinned stack) |
+
+---
+
+## Maintain (for skill maintainers)
 
 ### Change or add a skill
 
 ```bash
-cd <your clone of claude-skills>
+cd ~/Documents/Skills          # or wherever you keep your clone with push access
 git pull
-# edit files under plugins/team-vue/skills/<skill>/  (or add a new skill folder with a SKILL.md)
+# edit skills/<skill>/...   — or add skills/<new-skill>/SKILL.md
 ```
 
 1. **Test locally** before pushing:
@@ -105,32 +128,41 @@ git pull
    SKIP_PULL=1 bash install.sh       # installs your working copy into ~/.claude/skills
    ```
    Reload VS Code and try a request that should use the skill.
-2. **Bump the version** in `plugins/team-vue/.claude-plugin/plugin.json` (e.g. `1.1.0 → 1.2.0`).
-   Set it only there, not in `marketplace.json`.
-3. **Commit and push:**
+2. **Bump the version** in `.claude-plugin/plugin.json` (e.g. `1.4.0 → 1.5.0`). It's the only
+   place the version lives.
+3. **Commit and push** (Conventional Commits):
    ```bash
    git add .
-   git commit -m "vue-architecture: add pagination rule (v1.2.0)"
+   git commit -m "feat(vue-architecture): add pagination rule (v1.5.0)"
    git push
    ```
 4. **Tell the team** to run `bash ~/claude-skills/install.sh`.
 
 ### Rules for skill files
-- Every skill is a folder with a `SKILL.md` that starts with:
+- Every skill is a folder in `skills/` with a `SKILL.md` that starts on line 1 with:
   ```yaml
   ---
   name: my-skill              # same as the folder name, lowercase-with-dashes
   description: What it does and when to use it.   # ≤ 200 characters (claude.ai limit)
   ---
   ```
-- Keep `SKILL.md` short (under about 200 lines). Put details in `references/*.md` and code in
-  `templates/`.
-- No project secrets, credentials, personal data or internal URLs in skills.
+  Nothing may come before the first `---`, not even a blank line, or Claude can't read the skill.
+- Keep `SKILL.md` short. Put details in `references/*.md` and code in `templates/`.
+- No secrets, credentials, personal data or internal URLs. **This repo is public.**
 - **Don't edit `skills/frappe-ui/`.** It's the official upstream reference. To upgrade it, follow
-  `skills/frappe-ui/VERSION.md`, then update the pinned version in `vue-architecture`, rebuild
-  the templates on the new version, and bump the plugin version.
-- **Don't copy upstream skills into this repo** unless their license allows it. List them in
-  `UPSTREAM_SKILLS` in `install.sh` instead (see [Upstream skills](#upstream-skills)).
+  `skills/frappe-ui/VERSION.md`, update the pinned version in `vue-architecture`, rebuild the
+  templates on the new version, and bump the plugin version.
+- **Don't copy other people's skills into `skills/`** unless their license allows it. List
+  them in `upstream-skills.txt` instead.
+
+### Validate before pushing (optional)
+
+```bash
+claude plugin validate .
+```
+
+"Validation passed" is what matters. Notes about a missing LICENSE or icon only apply to
+submitting to Anthropic's public plugin directory.
 
 ### Pinned stack (what the skills assume)
 
@@ -147,25 +179,11 @@ Older apps on frappe-ui `0.1.x` are covered by `vue-architecture/references/lega
 
 ---
 
-## Repository layout
-
-```
-README.md
-install.sh                              installer / updater for teammates
-.claude-plugin/marketplace.json         plugin marketplace "team-skills" (optional install route)
-plugins/team-vue/
-  .claude-plugin/plugin.json            plugin "team-vue" + version
-  skills/
-    vue-architecture/                   SKILL.md, references/, templates/
-    vue-common-components/              SKILL.md, references/, templates/
-    dashboard-guide/                    SKILL.md, references/
-    frappe-ui/                          official frappe-ui skill v1.2.0 (MIT, unchanged)
-```
-
 ## Upstream skills
 
-These are downloaded by `install.sh` from their own repos, pinned to a commit, instead of being
-copied here (their repos have no license, so this public repo doesn't republish them).
+Listed in `upstream-skills.txt` and downloaded by `install.sh` from their own repos, pinned to a
+commit, instead of being copied here (their repos have no license, so this public repo doesn't
+republish them).
 
 | Skill | Source | Pinned commit |
 |---|---|---|
@@ -175,17 +193,18 @@ copied here (their repos have no license, so this public repo doesn't republish 
 `bench` setup, read `pilot frappe` as `bench` and `pilot start` as `bench start`; its Code and
 Tests sections apply as-is.
 
-**To update one:** check the upstream changes, put the new full commit hash in its URL in
-`UPSTREAM_SKILLS` (`install.sh`), update the table above, bump the plugin version, and push.
+- **Update one:** check the upstream changes, put the new full commit hash in its URL in
+  `upstream-skills.txt`, update the table above, bump the plugin version, push.
+- **Add one:** add a line `name | https://raw.githubusercontent.com/<owner>/<repo>/<full commit>/<path>/SKILL.md`
+  to `upstream-skills.txt`. Only single-file skills (just a `SKILL.md`) work this way.
 
-**To add one:** add a `"name|https://raw.githubusercontent.com/<owner>/<repo>/<full commit>/<path>/SKILL.md"`
-line to `UPSTREAM_SKILLS`. Only single-file skills (just a `SKILL.md`) work this way.
+---
 
 ## Other ways to install
 
 Use **one** method per machine, or Claude sees two copies of each skill.
 
-**Claude Code plugin** (alternative to `install.sh`; skills appear as `team-vue:<skill>`):
+**Claude Code plugin** (skills appear as `team-vue:<skill>`):
 
 ```
 /plugin marketplace add Tech4socialsector/claude-skills
@@ -193,7 +212,6 @@ Use **one** method per machine, or Claude sees two copies of each skill.
 ```
 
 Update with `/plugin marketplace update team-skills`, then `/plugin` → Installed → Update now.
-
 The plugin doesn't include the upstream skills. Install `frappe-app-dev` separately:
 
 ```bash
@@ -206,12 +224,12 @@ curl -fsSL https://raw.githubusercontent.com/frappe/skills/d213dce39942c969293e9
 folder and upload it under Customize → Skills → **+** → Create skill → Upload a skill:
 
 ```bash
-cd ~/claude-skills/plugins/team-vue/skills
+cd ~/claude-skills/skills
 zip -r ~/vue-architecture.zip vue-architecture
 zip -r ~/vue-common-components.zip vue-common-components
 zip -r ~/dashboard-guide.zip dashboard-guide
 ```
 
 Don't upload `frappe-ui` or `frappe-app-dev` to claude.ai, because their descriptions are over
-claude.ai's 200-character limit. On a Team or Enterprise plan, an owner can provision the skills for everyone
-(Organization settings → Plugins & skills).
+claude.ai's 200-character limit. On a Team or Enterprise plan, an owner can provision the skills
+for everyone (Organization settings → Plugins & skills).

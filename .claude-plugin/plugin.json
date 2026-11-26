@@ -1,0 +1,8 @@
+{
+  "name": "team-vue",
+  "version": "1.4.0",
+  "description": "Team standards for Vue 3 + frappe-ui 1.2.0 frontends and dashboards: vue-architecture, vue-common-components, dashboard-guide, and the official frappe-ui reference (v1.2.0).",
+  "author": {
+    "name": "Tech4socialsector"
+  }
+}
