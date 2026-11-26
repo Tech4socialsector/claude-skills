@@ -1,5 +1,5 @@
 {
   "name": "team-vue",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Team standards for Vue 3 + frappe-ui 1.2.0 frontends: vue-architecture, vue-common-components, dashboard-guide, and the official frappe-ui reference (v1.2.0)."
 }

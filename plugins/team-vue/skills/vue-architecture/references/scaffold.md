@@ -70,11 +70,17 @@ export default defineConfig({
     vue(),
   ],
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
+  // frappe-ui 1.2.0: the dev server's pre-bundler can't resolve the package-internal
+  // `#utils/*` imports used by `frappe-ui/charts` ("Could not resolve '#utils/debounce'").
+  // Production builds are fine. Excluding the subpath fixes `yarn dev`.
+  optimizeDeps: { exclude: ['frappe-ui/charts'] },
 })
 ```
 
 The plugin turns on the dev proxy to bench, Jinja boot data and the Frappe build config by
-default. Don't override `optimizeDeps`.
+default. Apart from the `exclude` above, leave `optimizeDeps` to the plugin. If `yarn dev`
+reports the same `#utils/…` error for another subpath (e.g. `frappe-ui/editor`), add that
+subpath to `exclude` too.
 
 ## 4. `frontend/tailwind.config.js` and `postcss.config.js`
 

@@ -10,7 +10,7 @@ Repo: <https://github.com/Tech4socialsector/claude-skills>
 |---|---|
 | `vue-architecture` | add or change pages, routes, composables, services, stores or API calls, or scaffold a new Vue frontend |
 | `vue-common-components` | build any screen: tables, status badges, cards, dialogs, filters, pickers, empty states |
-| `dashboard-guide` | build, change or review a dashboard (KPIs, filters, drilldowns, exports, security) |
+| `dashboard-guide` | build, change or review a dashboard (UI design, KPIs, charts, filters, drilldowns, exports, security), with ready Vue + backend templates |
 | `frappe-ui` | write frappe-ui markup (official reference for v1.2.0: exact props, slots, tokens, data composables) |
 
 ---
@@ -48,7 +48,7 @@ Updating /home/<you>/claude-skills from GitHub ...
   installed  frappe-ui
   installed  vue-architecture
   installed  vue-common-components
-Done: team skills v1.1.0 installed in /home/<you>/.claude/skills
+Done: team skills v1.2.0 installed in /home/<you>/.claude/skills
 ```
 
 ### 4. Check they're loaded
