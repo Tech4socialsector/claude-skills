@@ -36,8 +36,8 @@ Cloning https://github.com/Tech4socialsector/claude-skills.git into /home/<you>/
   installed  frappe-ui
   installed  vue-architecture
   installed  vue-common-components
-  installed  frappe-app-dev (downloaded from upstream)
-Done: team skills v1.4.0 installed in /home/<you>/.claude/skills
+  installed  frappe-app-dev (upstream frappe/skills@d213dce)
+Done: team skills v1.4.1 installed in /home/<you>/.claude/skills
 ```
 
 > Prefer to look first? `git clone https://github.com/Tech4socialsector/claude-skills.git ~/claude-skills`,
@@ -92,7 +92,7 @@ Commit that `.claude/skills` folder if the project is also used with **Claude Co
 claude-skills/
 ├── README.md                  this guide
 ├── install.sh                 installer / updater (run it; never edit ~/.claude/skills by hand)
-├── upstream-skills.txt        skills downloaded from other repos at install time
+├── upstream-skills.txt        skills installed from other repos (e.g. frappe-app-dev), pinned
 ├── .claude-plugin/            optional plugin install route (see "Other ways to install")
 │   ├── plugin.json            plugin "team-vue" + THE version number
 │   └── marketplace.json       marketplace "team-skills"
@@ -153,7 +153,7 @@ git pull
   `skills/frappe-ui/VERSION.md`, update the pinned version in `vue-architecture`, rebuild the
   templates on the new version, and bump the plugin version.
 - **Don't copy other people's skills into `skills/`** unless their license allows it. List
-  them in `upstream-skills.txt` instead.
+  them in `upstream-skills.txt` instead (see [Upstream skills](#upstream-skills)).
 
 ### Validate before pushing (optional)
 
@@ -181,9 +181,9 @@ Older apps on frappe-ui `0.1.x` are covered by `vue-architecture/references/lega
 
 ## Upstream skills
 
-Listed in `upstream-skills.txt` and downloaded by `install.sh` from their own repos, pinned to a
-commit, instead of being copied here (their repos have no license, so this public repo doesn't
-republish them).
+Skills from other teams' repos are **not copied** into this public repo (their repos have no
+license). Instead `upstream-skills.txt` lists them, and `install.sh` downloads the **whole skill
+folder** (SKILL.md plus any references/ or scripts/) at an exact, pinned commit.
 
 | Skill | Source | Pinned commit |
 |---|---|---|
@@ -193,10 +193,21 @@ republish them).
 `bench` setup, read `pilot frappe` as `bench` and `pilot start` as `bench start`; its Code and
 Tests sections apply as-is.
 
-- **Update one:** check the upstream changes, put the new full commit hash in its URL in
-  `upstream-skills.txt`, update the table above, bump the plugin version, push.
-- **Add one:** add a line `name | https://raw.githubusercontent.com/<owner>/<repo>/<full commit>/<path>/SKILL.md`
-  to `upstream-skills.txt`. Only single-file skills (just a `SKILL.md`) work this way.
+`upstream-skills.txt` format, one skill per line:
+
+```
+<skill-name> | <owner>/<repo> | <full 40-char commit SHA> | <folder path in that repo>
+frappe-app-dev | frappe/skills | d213dce39942c969293e9fe7feb96ab33cbba25c | skills/frappe-app-dev
+```
+
+- **Add one:** add a line (get the SHA from the repo's latest commit on GitHub), run
+  `SKIP_PULL=1 bash install.sh` to test, update the table above, bump the version, push.
+  `frappe/skills` also has e.g. `frappe-code-review`, `code-style`, `ui-design`,
+  `review-ui-states`, `technical-writing`; multi-file skills work too.
+- **Update one:** review the upstream changes, replace the SHA, test, update the table, bump the
+  version, push.
+- The installer refuses a name that clashes with a team skill in `skills/`, skips malformed
+  lines, and keeps the previously installed copy if a download fails.
 
 ---
 

@@ -93,34 +93,54 @@ if [ "${#current[@]}" -eq 0 ]; then
   exit 1
 fi
 
-# 3. Download the upstream skills (a failed download keeps any copy installed earlier)
+# 3. Install the upstream skills listed in upstream-skills.txt.
+#    Line format:  <skill-name> | <owner>/<repo> | <full commit SHA> | <folder path in that repo>
+#    The WHOLE folder is installed (SKILL.md + references/, scripts/, …), pinned to the commit.
+#    One GitHub archive is downloaded per repo+commit. A failed download keeps any copy
+#    installed earlier. A name that clashes with a team skill in skills/ is refused.
 UPSTREAM_LIST="$REPO_DIR/upstream-skills.txt"
 if [ -f "$UPSTREAM_LIST" ]; then
+  work="$(mktemp -d)"
+  trap 'rm -rf "$work"' EXIT
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line%%#*}"                                   # strip comments
-    line="$(printf '%s' "$line" | tr -d '[:space:]')"   # names and URLs contain no spaces
+    line="$(printf '%s' "$line" | tr -d '[:space:]')"   # fields contain no spaces
     [ -n "$line" ] || continue
-    name="${line%%|*}"
-    url="${line#*|}"
-    if [ -z "$name" ] || [ "$name" = "$line" ] || [ -z "$url" ]; then
-      echo "Warning: skipped malformed line in upstream-skills.txt" >&2
+    IFS='|' read -r name repo sha path extra <<< "$line"
+    if [ -z "$name" ] || [ -z "$repo" ] || [ -z "$path" ] || [ -n "${extra:-}" ] \
+      || ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || ! [[ "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] \
+      || ! [[ "$name" =~ ^[a-z0-9][a-z0-9-]*$ ]] || [[ "$path" == *..* ]]; then
+      echo "Warning: skipped malformed line in upstream-skills.txt: $line" >&2
+      continue
+    fi
+    if [ -d "$SRC/$name" ]; then
+      echo "Warning: upstream skill '$name' clashes with a team skill in skills/; skipped." >&2
       continue
     fi
     current+=("$name")   # always listed, so step 4 never removes it after a failed download
-    tmp="$(mktemp -d)"
-    if command -v curl >/dev/null 2>&1 \
-      && curl -fsSL --connect-timeout 10 --max-time 60 --retry 2 "$url" -o "$tmp/SKILL.md" \
-      && [ "$(head -n 1 "$tmp/SKILL.md")" = "---" ]; then
-      rm -rf "${TARGET:?}/$name"
-      mkdir -p "$TARGET/$name"
-      cp "$tmp/SKILL.md" "$TARGET/$name/SKILL.md"
-      echo "  installed  $name (downloaded from upstream)"
-    elif [ -f "$TARGET/$name/SKILL.md" ]; then
-      echo "Warning: could not download $name (needs curl and network); kept the copy installed earlier." >&2
-    else
-      echo "Warning: could not download $name (needs curl and network); skipped. Run the installer again later." >&2
+
+    # Download + unpack each repo@commit once
+    archive="$work/${repo//\//_}_$sha"
+    if [ ! -d "$archive" ] && [ ! -f "$archive.failed" ]; then
+      mkdir -p "$archive"
+      if ! { command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1 \
+        && curl -fsSL --connect-timeout 10 --max-time 120 --retry 2 \
+             "https://codeload.github.com/$repo/tar.gz/$sha" \
+           | tar -xzf - --strip-components=1 -C "$archive"; }; then
+        rm -rf "$archive"; touch "$archive.failed"
+      fi
     fi
-    rm -rf "$tmp"
+
+    src="$archive/${path%/}"
+    if [ -d "$src" ] && [ "$(head -n 1 "$src/SKILL.md" 2>/dev/null)" = "---" ]; then
+      rm -rf "${TARGET:?}/$name"
+      cp -R "$src" "$TARGET/$name"
+      echo "  installed  $name (upstream $repo@${sha:0:7})"
+    elif [ -f "$TARGET/$name/SKILL.md" ]; then
+      echo "Warning: could not download $name from $repo (needs curl, tar and network); kept the copy installed earlier." >&2
+    else
+      echo "Warning: could not download $name from $repo (needs curl, tar and network); skipped. Run the installer again later." >&2
+    fi
   done < "$UPSTREAM_LIST"
 fi
 

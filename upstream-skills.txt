@@ -1,7 +1,12 @@
-# Skills that install.sh downloads from other repos at install time
-# (not copied into this repo, e.g. because the upstream repo has no license).
+# Skills that install.sh installs from OTHER repos, pinned to an exact commit.
+# They are not copied into this repo because their repos have no license.
 #
-# One per line:  <skill-name> | <raw URL of its SKILL.md, pinned to a commit>
-# To update one, change the commit in its URL. Lines starting with # are ignored.
+# Format (one skill per line, fields separated by |):
+#   <skill-name> | <owner>/<repo> | <full 40-char commit SHA> | <folder path in that repo>
+#
+# The whole folder is installed (SKILL.md plus any references/ or scripts/).
+# To update a skill: change its SHA to a newer commit, bump the version in
+# .claude-plugin/plugin.json, and update the "Upstream skills" table in README.md.
+# Lines starting with # are ignored.
 
-frappe-app-dev | https://raw.githubusercontent.com/frappe/skills/d213dce39942c969293e9fe7feb96ab33cbba25c/skills/frappe-app-dev/SKILL.md
+frappe-app-dev | frappe/skills | d213dce39942c969293e9fe7feb96ab33cbba25c | skills/frappe-app-dev
