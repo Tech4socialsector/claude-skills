@@ -4,7 +4,7 @@ Shared [Claude Code](https://code.claude.com) skills for the Tech4socialsector t
 Claude how **we** build Frappe apps, Vue 3 + frappe-ui frontends and dashboards, so every project
 and every teammate gets the same structure, components and security checks, whatever the domain.
 
-Repo: <https://github.com/Tech4socialsector/claude-skills> (public)
+Repo: <https://github.com/Tech4socialsector/claude-skills> (public) · [Release notes](CHANGELOG.md)
 
 | Skill | Claude uses it when you… |
 |---|---|
@@ -91,6 +91,7 @@ Commit that `.claude/skills` folder if the project is also used with **Claude Co
 ```
 claude-skills/
 ├── README.md                  this guide
+├── CHANGELOG.md               release notes (what changed in each version)
 ├── install.sh                 installer / updater (run it; never edit ~/.claude/skills by hand)
 ├── upstream-skills.txt        skills installed from other repos (e.g. frappe-app-dev), pinned
 ├── .claude-plugin/            optional plugin install route (see "Other ways to install")
@@ -129,7 +130,8 @@ git pull
    ```
    Reload VS Code and try a request that should use the skill.
 2. **Bump the version** in `.claude-plugin/plugin.json` (e.g. `1.4.0 → 1.5.0`). It's the only
-   place the version lives.
+   place the version lives. Add an entry at the top of `CHANGELOG.md` (Features, Bug Fixes,
+   Implementation, Security, Upgrade notes).
 3. **Commit and push** (Conventional Commits):
    ```bash
    git add .
